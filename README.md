@@ -5,10 +5,12 @@
 |   arg name      |      description             |
 | --------------- | ---------------------------- |
 | id_column *     | column of the id for actions |
-| height          | frame height                 |
+| height          | table height                 |
 | width           | table width                  |
-| column_specs    | list of editable columns     |
+| column_specs    | list of columns specs        |
 | add_view_column | add a view column            |
+| action_id       | some id to track the actions |
+| return_table_array | to return the table array |
 
 # Quick use
 

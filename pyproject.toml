@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gd-st-custom-datatable"
-version = "0.2.2"
+version = "0.2.6"
 description = ""
 authors = ["Gnomon Digital <contact@gnomondigital.com>"]
 readme = "README.md"

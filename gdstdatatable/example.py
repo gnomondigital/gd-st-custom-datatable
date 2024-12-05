@@ -32,6 +32,9 @@ def apply_action(action, df):
 if "df" not in st.session_state:
     st.session_state.df = init_df()
 
+if "action_id" not in st.session_state:
+    st.session_state.action_id = 0
+
 
 @st.fragment
 def show_df():
@@ -46,13 +49,24 @@ def show_df():
         ],
         add_view_column=True,
         width=800,
+        action_id=st.session_state.action_id,
+        key="datatable",
     )
 
     if action:
         print("action=", action)
         st.write("action:", action)
-        st.session_state.df = apply_action(action, st.session_state.df)
-        print("df=", st.session_state.df)
+        if action["actionId"] > st.session_state.action_id:
+            st.session_state.df = apply_action(action, st.session_state.df)
+            st.session_state.action_id = action["actionId"]
+            print("df=", st.session_state.df)
+        else:
+            print(
+                "already applied actionId=",
+                action["actionId"],
+                "session.action_id=",
+                st.session_state.action_id,
+            )
 
 
 show_df()

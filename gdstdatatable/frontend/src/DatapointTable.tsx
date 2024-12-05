@@ -46,7 +46,7 @@ function getTableData(table: ArrowTable): TableData {
     const row = [];
     for (let j = sourceColOffset; j < cols; j++) {
       const { content } = table.getCell(i, j);
-      row.push(content);
+      row.push(formatValue(content));
     }
     cells.push(row);
   }
@@ -113,7 +113,9 @@ function getGridCells(table: TableData,
   gridColumns: GridColumn[],
   columnSpecs: ColumnSpec[],
   addViewColumn: boolean,
-  idColumn: string): (item: Item) => GridCell {
+  idColumn: string,
+  onView: (id: any) => void,
+): (item: Item) => GridCell {
 
   return function ([col, row]: Item): GridCell {
     const colName = gridColumns[col].title;
@@ -127,9 +129,7 @@ function getGridCells(table: TableData,
         data: {
           kind: "button-cell",
           title: "view",
-          onClick: () => {
-            Streamlit.setComponentValue({ action: "view", id: formatValue(id) });
-          }
+          onClick: () => onView(formatValue(id))
         },
         copyData: "view",
         allowOverlay: false,
@@ -161,32 +161,55 @@ const DatapointTable: React.FC<ComponentProps> = props => {
   const addViewColumn: boolean = props.args.add_view_column === true;
   const columnSpecs: ColumnSpec[] = props.args.column_specs ?? [];
   const width = props.args.width;
+  const actionIdArg = props.args.action_id ?? 0;
+  const returnTableArray = props.args.return_table_array ?? false;
 
   useEffect(() => {
     Streamlit.setFrameHeight(height);
   });
 
+  const [actionId, setActionId] = useState(actionIdArg + 1);
   const [tableData, setTableData] = useState(getTableData(arrowTable));
   const gridColumns = getGridColumns(tableData.columns, addViewColumn, columnSpecs);
 
-  const onCellEdited = React.useCallback((cell: Item, newValue: EditableGridCell) => {
+  const addTableToReturnValue = (streamlitResult: any): any => {
+    if (returnTableArray) {
+      streamlitResult['table'] = tableData;
+    }
+    return streamlitResult;
+  }
+
+  const onCellEdited = (cell: Item, newValue: EditableGridCell) => {
     const [col, row] = cell;
     const colName = gridColumns[col].title;
     const colIndex = tableData.columns.indexOf(colName);
 
     tableData.cells[row][colIndex] = newValue.data;
     setTableData({ ...tableData });
-    const id = getContentAt(row, idColumn, tableData)
+    const id = getContentAt(row, idColumn, tableData);
+    setActionId(actionId + 1);
+    Streamlit.setComponentValue(
+      addTableToReturnValue({
+        action: "edit",
+        id: id,
+        colName: colName,
+        value: newValue.data,
+        actionId: actionId
+      }));
+  };
 
-    Streamlit.setComponentValue({
-      action: "edit",
-      id: formatValue(id),
-      colName: colName,
-      value: formatValue(newValue.data)
-    });
-  }, [tableData, idColumn, gridColumns]);
+  const onView = (id: any): void => {
+    setActionId(actionId + 1);
+    Streamlit.setComponentValue(
+      addTableToReturnValue({
+        action: "view",
+        id: id,
+        actionId: actionId
+      }));
+  }
 
   const { customRenderers } = useExtraCells();
+
   return <div>
     <div id="portal" style={portalStyle} />
     <DataEditor
@@ -196,7 +219,8 @@ const DatapointTable: React.FC<ComponentProps> = props => {
           gridColumns,
           columnSpecs,
           addViewColumn,
-          idColumn)}
+          idColumn,
+          onView)}
       columns={gridColumns}
       rows={tableData.cells.length}
       customRenderers={customRenderers}
