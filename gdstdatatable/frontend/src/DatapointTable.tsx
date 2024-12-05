@@ -71,7 +71,7 @@ function getGridColumns(columns: string[],
   addViewColumn: boolean,
   columnWidth: ColumnWidth): GridColumn[] {
   if (!isEmpty(displayeds)) {
-    columns = columns.filter(column => displayeds.includes(column))
+    columns = displayeds;
   }
   if (addViewColumn) {
     columns = columns.concat("view");
