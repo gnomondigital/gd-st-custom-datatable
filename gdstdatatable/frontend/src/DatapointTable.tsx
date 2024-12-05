@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { range } from "lodash"
+import { isEmpty, range } from "lodash"
 import {
   DataEditor,
   EditableGridCell,
@@ -66,15 +66,17 @@ function getContentAt(row: number, colName: string, table: TableData): any {
   return table.cells[row][colIndex];
 }
 
-function getGridColumns(columns: string[], 
-  hides: string[], 
+function getGridColumns(columns: string[],
+  displayeds: string[],
   addViewColumn: boolean,
   columnWidth: ColumnWidth): GridColumn[] {
+  if (!isEmpty(displayeds)) {
+    columns = columns.filter(column => displayeds.includes(column))
+  }
   if (addViewColumn) {
     columns = columns.concat("view");
   }
   return columns
-    .filter(column => !hides.includes(column))
     .map(column => {
       const width = columnWidth[column] ?? 100;
       return { title: column, width: width }
@@ -139,7 +141,7 @@ const DatapointTable: React.FC<ComponentProps> = props => {
   const arrowTable: ArrowTable = props.args.data;
   const height: number = props.args.height ?? 34 * props.args.data.rows;
   const editables: string[] = props.args.editables ?? [];
-  const hides: string[] = props.args.hides ?? [];
+  const displayeds: string[] = props.args.displayeds ?? [];
   const idColumn: string = props.args.id_column
   const addViewColumn: boolean = props.args.add_view_column === true
   const columnWidth: ColumnWidth = props.args.column_width ?? {};
@@ -166,7 +168,7 @@ const DatapointTable: React.FC<ComponentProps> = props => {
   }, [tableData, idColumn]);
 
   const { customRenderers } = useExtraCells();
-  const gridColumns = getGridColumns(tableData.columns, hides, addViewColumn, columnWidth);
+  const gridColumns = getGridColumns(tableData.columns, displayeds, addViewColumn, columnWidth);
   return <div>
     <div id="portal" style={portalStyle} />
     <DataEditor

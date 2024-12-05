@@ -37,7 +37,7 @@ def show_df():
     action = gd_datatable(
         st.session_state.df,
         id_column="id",
-        hides=["id"],
+        displayeds=["select", "name"],
         editables=["select", "name"],
         column_width={"select": 50, "name": 150, "view": 70},
         add_view_column=True,
