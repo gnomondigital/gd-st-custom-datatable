@@ -4,12 +4,11 @@
 
 |   arg name      |      description             |
 | --------------- | ---------------------------- |
-| id_column       | column of the id for actions |
+| id_column *     | column of the id for actions |
 | height          | frame height                 |
-| editables       | list of editable columns     |
-| displayeds      | list of displayed columns    |
+| width           | table width                  |
+| column_specs    | list of editable columns     |
 | add_view_column | add a view column            |
-| column_width    | dict of column widths        |
 
 # Quick use
 

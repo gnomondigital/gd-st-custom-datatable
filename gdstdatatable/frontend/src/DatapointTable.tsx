@@ -29,8 +29,11 @@ interface TableData {
   cells: any[][];
 }
 
-interface ColumnWidth {
-  [index: string]: number;
+interface ColumnSpec {
+  name: string;
+  grow?: number;
+  width?: number;
+  editable?: boolean;
 }
 
 function getTableData(table: ArrowTable): TableData {
@@ -67,19 +70,33 @@ function getContentAt(row: number, colName: string, table: TableData): any {
 }
 
 function getGridColumns(columns: string[],
-  displayeds: string[],
   addViewColumn: boolean,
-  columnWidth: ColumnWidth): GridColumn[] {
-  if (!isEmpty(displayeds)) {
-    columns = displayeds;
+  columnSpecs: ColumnSpec[]): GridColumn[] {
+  if (!isEmpty(columnSpecs)) {
+    columns = columnSpecs.map(c => c.name);
   }
-  if (addViewColumn) {
+  if (addViewColumn && !columns.includes("view")) {
     columns = columns.concat("view");
   }
   return columns
     .map(column => {
-      const width = columnWidth[column] ?? 100;
-      return { title: column, width: width }
+      const columnSpec = columnSpecs.find(c => c.name === column);
+      if (columnSpec) {
+        if (columnSpec.width) {
+          return {
+            title: column,
+            width: columnSpec.width
+          };
+        } else {
+          return {
+            title: column,
+            id: column,
+            grow: columnSpec.grow
+          };
+        }
+      } else {
+        return { title: column, id: column };
+      }
     });
 }
 
@@ -94,14 +111,14 @@ function formatValue(value: any): any {
 
 function getGridCells(table: TableData,
   gridColumns: GridColumn[],
-  editables: string[],
+  columnSpecs: ColumnSpec[],
   addViewColumn: boolean,
   idColumn: string): (item: Item) => GridCell {
 
   return function ([col, row]: Item): GridCell {
     const colName = gridColumns[col].title;
     const content = getContentAt(row, colName, table)
-    const isColReadonly = !editables.includes(colName);
+    const isColReadonly = !columnSpecs.some(c => c.editable);
     const id = getContentAt(row, idColumn, table)
 
     if ((colName === "view") && addViewColumn) {
@@ -140,23 +157,25 @@ function getGridCells(table: TableData,
 const DatapointTable: React.FC<ComponentProps> = props => {
   const arrowTable: ArrowTable = props.args.data;
   const height: number = props.args.height ?? 34 * props.args.data.rows;
-  const editables: string[] = props.args.editables ?? [];
-  const displayeds: string[] = props.args.displayeds ?? [];
-  const idColumn: string = props.args.id_column
-  const addViewColumn: boolean = props.args.add_view_column === true
-  const columnWidth: ColumnWidth = props.args.column_width ?? {};
+  const idColumn: string = props.args.id_column;
+  const addViewColumn: boolean = props.args.add_view_column === true;
+  const columnSpecs: ColumnSpec[] = props.args.column_specs ?? [];
+  const width = props.args.width;
 
   useEffect(() => {
     Streamlit.setFrameHeight(height);
   });
 
-  const [tableData, setTableData] = useState(getTableData(arrowTable))
+  const [tableData, setTableData] = useState(getTableData(arrowTable));
+  const gridColumns = getGridColumns(tableData.columns, addViewColumn, columnSpecs);
 
   const onCellEdited = React.useCallback((cell: Item, newValue: EditableGridCell) => {
     const [col, row] = cell;
-    tableData.cells[row][col] = newValue.data;
+    const colName = gridColumns[col].title;
+    const colIndex = tableData.columns.indexOf(colName);
+
+    tableData.cells[row][colIndex] = newValue.data;
     setTableData({ ...tableData });
-    const colName = tableData.columns[col];
     const id = getContentAt(row, idColumn, tableData)
 
     Streamlit.setComponentValue({
@@ -165,10 +184,9 @@ const DatapointTable: React.FC<ComponentProps> = props => {
       colName: colName,
       value: formatValue(newValue.data)
     });
-  }, [tableData, idColumn]);
+  }, [tableData, idColumn, gridColumns]);
 
   const { customRenderers } = useExtraCells();
-  const gridColumns = getGridColumns(tableData.columns, displayeds, addViewColumn, columnWidth);
   return <div>
     <div id="portal" style={portalStyle} />
     <DataEditor
@@ -176,13 +194,14 @@ const DatapointTable: React.FC<ComponentProps> = props => {
         getGridCells(
           tableData,
           gridColumns,
-          editables,
+          columnSpecs,
           addViewColumn,
           idColumn)}
       columns={gridColumns}
       rows={tableData.cells.length}
       customRenderers={customRenderers}
       onCellEdited={onCellEdited}
+      width={width}
     />
   </div>
 }

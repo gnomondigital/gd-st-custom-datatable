@@ -11,9 +11,10 @@ def init_df():
     ids = list(range(1, 8))
     selecteds = [False for i in ids]
     names = [f"name{i}" for i in ids]
+    desc = [f"desc{i}" for i in ids]
 
-    raw_data = {"id": ids, "select": selecteds, "name": names}
-    df = pd.DataFrame(raw_data, columns=["select", "id", "name"])
+    raw_data = {"id": ids, "select": selecteds, "desc": desc, "name": names}
+    df = pd.DataFrame(raw_data, columns=["select", "id", "desc", "name"])
     return df
 
 
@@ -37,10 +38,14 @@ def show_df():
     action = gd_datatable(
         st.session_state.df,
         id_column="id",
-        displayeds=["select", "name"],
-        editables=["select", "name"],
-        column_width={"select": 50, "name": 150, "view": 70},
+        column_specs=[
+            {"name": "select", "width": 50, "editable": True},
+            {"name": "name", "grow": 2, "editable": True},
+            {"name": "desc", "grow": 2},
+            {"name": "view", "width": 60},
+        ],
         add_view_column=True,
+        width=800,
     )
 
     if action:
