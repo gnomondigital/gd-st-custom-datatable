@@ -118,38 +118,48 @@ function getGridCells(table: TableData,
 ): (item: Item) => GridCell {
 
   return function ([col, row]: Item): GridCell {
-    const colName = gridColumns[col].title;
-    const content = getContentAt(row, colName, table)
-    const isColReadonly = !columnSpecs.some(c => c.editable);
-    const id = getContentAt(row, idColumn, table)
-
-    if ((colName === "view") && addViewColumn) {
-      return {
-        kind: GridCellKind.Custom,
-        data: {
-          kind: "button-cell",
-          title: "view",
-          onClick: () => onView(formatValue(id))
-        },
-        copyData: "view",
-        allowOverlay: false,
-        readonly: true
-      };
-    } else if (typeof (content) == 'boolean') {
-      return {
-        kind: GridCellKind.Boolean,
-        data: content === true,
-        allowOverlay: false,
-        readonly: isColReadonly
-      };
-    } else {
+    if (row >= table.cells.length) {
       return {
         kind: GridCellKind.Text,
-        data: (content || '').toString(),
+        data: "",
         allowOverlay: true,
-        readonly: isColReadonly,
-        displayData: (content || '').toString(),
+        readonly: true,
+        displayData: "",
       };
+    } else {
+      const colName = gridColumns[col].title;
+      const content = getContentAt(row, colName, table)
+      const isColReadonly = !columnSpecs.some(c => c.editable);
+      const id = getContentAt(row, idColumn, table)
+
+      if ((colName === "view") && addViewColumn) {
+        return {
+          kind: GridCellKind.Custom,
+          data: {
+            kind: "button-cell",
+            title: "view",
+            onClick: () => onView(formatValue(id))
+          },
+          copyData: "view",
+          allowOverlay: false,
+          readonly: true
+        };
+      } else if (typeof (content) == 'boolean') {
+        return {
+          kind: GridCellKind.Boolean,
+          data: content === true,
+          allowOverlay: false,
+          readonly: isColReadonly
+        };
+      } else {
+        return {
+          kind: GridCellKind.Text,
+          data: (content || '').toString(),
+          allowOverlay: true,
+          readonly: isColReadonly,
+          displayData: (content || '').toString(),
+        };
+      }
     }
   };
 }

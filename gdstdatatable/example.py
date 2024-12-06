@@ -28,8 +28,13 @@ def apply_action(action, df):
                 column = action["colName"]
                 value = action["value"]
                 df.loc[df["id"] == id, column] = value
-                print("apply action ", df, action["actionId"], st.session_state.datatable["actionId"])
-                result=df
+                print(
+                    "apply action ",
+                    df,
+                    action["actionId"],
+                    st.session_state.datatable["actionId"],
+                )
+                result = df
             st.session_state.action_id = action["actionId"]
         else:
             print("skip action", action["actionId"], st.session_state.action_id)
@@ -74,8 +79,16 @@ def update_select():
     st.session_state.action_id += 1
     print(f"set actionId {st.session_state.action_id}")
 
-with st.container():
-    checked = st.checkbox(
-        "select all", key="select_all", on_change=update_select
-    )
-    show_df()
+
+left, right = st.columns([1, 1])
+with left:
+  checked = st.checkbox("select all", key="select_all", on_change=update_select)
+with right:
+  if st.button("delete"):
+      print(st.session_state.df)
+      st.session_state.df = st.session_state.df.loc[
+          st.session_state.df.loc[:, "select"] == False, :
+      ]
+      print(st.session_state.df)
+      st.session_state.action_id += 1
+show_df()
