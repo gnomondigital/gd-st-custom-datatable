@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, StrictMode } from "react"
 import { isEmpty, range } from "lodash"
 import {
   DataEditor,
@@ -163,6 +163,7 @@ const DatapointTable: React.FC<ComponentProps> = props => {
   const width = props.args.width;
   const actionIdArg = props.args.action_id ?? 0;
   const returnTableArray = props.args.return_table_array ?? false;
+  const debug = props.args.debug ?? false;
 
   useEffect(() => {
     Streamlit.setFrameHeight(height);
@@ -171,6 +172,25 @@ const DatapointTable: React.FC<ComponentProps> = props => {
   const [actionId, setActionId] = useState(actionIdArg + 1);
   const [tableData, setTableData] = useState(getTableData(arrowTable));
   const gridColumns = getGridColumns(tableData.columns, addViewColumn, columnSpecs);
+
+  useEffect(() => {
+    if (debug) {
+      console.log("source table has changed")
+    }
+    if (props.args.action_id >= actionId) {
+      if (debug) {
+        console.log("update table and action_id", props.args.action_id)
+      }
+      setTableData(getTableData(props.args.data))
+      setActionId(props.args.action_id + 1)
+    }
+  }, [props.args.data, props.args.action_id, actionId, debug])
+
+  if (debug) {
+    console.log("DatapointTable props", props);
+    console.log("getTableData", getTableData(props.args.data));
+    console.log("tableData", tableData);
+  }
 
   const addTableToReturnValue = (streamlitResult: any): any => {
     if (returnTableArray) {
@@ -210,7 +230,7 @@ const DatapointTable: React.FC<ComponentProps> = props => {
 
   const { customRenderers } = useExtraCells();
 
-  return <div>
+  return <StrictMode>
     <div id="portal" style={portalStyle} />
     <DataEditor
       getCellContent={
@@ -227,7 +247,7 @@ const DatapointTable: React.FC<ComponentProps> = props => {
       onCellEdited={onCellEdited}
       width={width}
     />
-  </div>
+  </StrictMode>
 }
 
 export default withStreamlitConnection(DatapointTable)

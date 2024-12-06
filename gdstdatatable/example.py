@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+from copy import copy
 from gdstdatatable import gd_datatable
 
 # Test code to play with the component while it's in development.
@@ -19,14 +20,20 @@ def init_df():
 
 
 def apply_action(action, df):
-    if action["action"] != "edit":
-        return df
-    else:
-        id = action["id"]
-        column = action["colName"]
-        value = action["value"]
-        df.loc[df["id"] == id, column] = value
-        return df
+    result = df
+    if "action" in action:
+        if action["actionId"] > st.session_state.action_id:
+            if action["action"] == "edit":
+                id = action["id"]
+                column = action["colName"]
+                value = action["value"]
+                df.loc[df["id"] == id, column] = value
+                print("apply action ", df, action["actionId"], st.session_state.datatable["actionId"])
+                result=df
+            st.session_state.action_id = action["actionId"]
+        else:
+            print("skip action", action["actionId"], st.session_state.action_id)
+    return result
 
 
 if "df" not in st.session_state:
@@ -36,8 +43,8 @@ if "action_id" not in st.session_state:
     st.session_state.action_id = 0
 
 
-@st.fragment
 def show_df():
+    print("show_df", st.session_state.action_id)
     action = gd_datatable(
         st.session_state.df,
         id_column="id",
@@ -51,22 +58,24 @@ def show_df():
         width=800,
         action_id=st.session_state.action_id,
         key="datatable",
+        debug=True,
     )
 
     if action:
         print("action=", action)
         st.write("action:", action)
-        if action["actionId"] > st.session_state.action_id:
-            st.session_state.df = apply_action(action, st.session_state.df)
-            st.session_state.action_id = action["actionId"]
-            print("df=", st.session_state.df)
-        else:
-            print(
-                "already applied actionId=",
-                action["actionId"],
-                "session.action_id=",
-                st.session_state.action_id,
-            )
+        st.session_state.df = apply_action(action, st.session_state.df)
 
 
-show_df()
+def update_select():
+    print(st.session_state.select_all)
+    st.session_state.df.loc[:, "select"] = st.session_state.select_all
+    print(f"get actionId {st.session_state.action_id}")
+    st.session_state.action_id += 1
+    print(f"set actionId {st.session_state.action_id}")
+
+with st.container():
+    checked = st.checkbox(
+        "select all", key="select_all", on_change=update_select
+    )
+    show_df()
